@@ -23,7 +23,7 @@ def approval_program():
 
     # Summary: opts contract into an asset
     # fees paid with caller tx fees (2 * min_fee)
-    # sets global asset balance to 0
+    # global asset balance can be called with built in functions no need for additional vars
     # can be used to opt contract in multiple assets as long as a global var is declared in the contract for asset
     # preconditions:
     # - param: asset_id = App.globalGet(asset_global_var) is already set 
