@@ -23,18 +23,18 @@ def approval_program():
 
     # Summary: opts contract into an asset
     # fees paid with caller tx fees (2 * min_fee)
-    # global asset balance can be called with built in functions no need for additional vars
+    # global balance is 0 maintained by contract and accessed with AssetHolding class functions
     # can be used to opt contract in multiple assets as long as a global var is declared in the contract for asset
     # preconditions:
+    # - Txn.type_enum() == TxnType.ApplicationCall
     # - param: asset_id = App.globalGet(asset_global_var) is already set 
     # - contract is not already opted into this asset
     # - sender is the creator of the contract
     # - tx is not part of a group
     # - fees of tx is equal to twice min fee to cover caller cost and inner transaction fee
-    # - tx not in group
-    # - rekey, close_remainder_to and asset_close_to set to zero address
+    # - rekey set to zero address
     # postconditions:
-    # - opt into 
+    # - contract opted into specified asset 
     @Subroutine(TealType.none)
     def contract_opt_in_asset(asset_id: Expr):
         asset_opt_in_check = AssetHolding.balance(Global.current_application_address(), asset_id)
@@ -42,12 +42,13 @@ def approval_program():
             asset_opt_in_check,
             Assert(
                 And(
+                    # sanity checks
+                    Txn.type_enum() == TxnType.ApplicationCall,
                     Global.group_size() == Int(1),
                     Txn.group_index() == Int(0),
                     Txn.rekey_to() == Global.zero_address(),
-                    Txn.close_remainder_to() == Global.zero_address(), # necessary?
-                    Txn.asset_close_to() == Global.zero_address(), # necessary?
 
+                    # logic checks
                     asset_opt_in_check.hasValue() == Int(0),
                     Txn.sender() == App.globalGet(creator),
                     Txn.fee() >= Global.min_txn_fee() * Int(2),
@@ -78,12 +79,13 @@ def approval_program():
         return Seq(
             Assert(
                 And(
+                    # sanity checks
+                    Txn.type_enum() == TxnType.ApplicationCall,
                     Global.group_size() == Int(1),
                     Txn.group_index() == Int(0),
                     Txn.rekey_to() == Global.zero_address(),
-                    Txn.close_remainder_to() == Global.zero_address(), # necessary?
-                    Txn.asset_close_to() == Global.zero_address(), # necessary?
                     
+                    # logic checks
                     App.optedIn(Txn.sender(), Global.current_application_id()) == Int(0),
                     Txn.fee() >= Global.min_txn_fee(),
                 )
@@ -114,17 +116,17 @@ def approval_program():
             Assert(
                 And(
 
+                    # sanity checks
+                    Txn.type_enum() == TxnType.AssetTransfer,
                     Global.group_size() == Int(1),
                     Txn.group_index() == Int(0),
                     Txn.rekey_to() == Global.zero_address(),
-                    Txn.close_remainder_to() == Global.zero_address(), # necessary?
                     Txn.asset_close_to() == Global.zero_address(), 
 
-                    
+                    # logic checks
                     # is txn.sender() == txn.asset_sender()??
                     # check if user is opted into asset being sent??
                     App.optedIn(Txn.sender(), Global.current_application_id()),
-                    Txn.type_enum() == TxnType.AssetTransfer,
                     Txn.asset_receiver() == Global.current_application_address(),
                     Txn.xfer_asset() == App.globalGet(vault_asset),
                     Txn.asset_amount() > Int(0),
@@ -161,13 +163,13 @@ def approval_program():
         return Seq(
             Assert(
                 And(
+                    # sanity checks
+                    Txn.type_enum() == TxnType.ApplicationCall,
                     Global.group_size() == Int(1),
                     Txn.group_index() == Int(0),
                     Txn.rekey_to() == Global.zero_address(),
-                    Txn.close_remainder_to() == Global.zero_address(), # necessary?
-                    Txn.asset_close_to() == Global.zero_address(),
 
-                    Txn.type_enum() == TxnType.ApplicationCall, # necessary?
+                    # logic checks
                     Txn.application_args.length() == Int(2),
                     Txn.assets.length() == Int(1),
                     App.optedIn(Txn.sender(), Global.current_application_id()),
