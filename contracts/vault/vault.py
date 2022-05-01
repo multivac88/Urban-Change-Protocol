@@ -25,6 +25,8 @@ def approval_program():
     # fees paid with caller tx fees (2 * min_fee)
     # global balance is 0 maintained by contract and accessed with AssetHolding class functions
     # can be used to opt contract in multiple assets as long as a global var is declared in the contract for asset
+    # @requirements:
+    # - assets[0] exists and is equivalent to vault_asset 
     # preconditions:
     # - Txn.type_enum() == TxnType.ApplicationCall
     # - param: asset_id = App.globalGet(asset_global_var) is already set 
@@ -37,7 +39,7 @@ def approval_program():
     # - contract opted into specified asset 
     @Subroutine(TealType.none)
     def contract_opt_in_asset(asset_id: Expr):
-        asset_opt_in_check = AssetHolding.balance(Global.current_application_address(), asset_id)
+        asset_opt_in_check = AssetHolding.balance(Global.current_application_address(), Int(0)) # requires index into asset array (Int(0))
         return Seq(
             asset_opt_in_check,
             Assert(
@@ -49,7 +51,9 @@ def approval_program():
                     Txn.rekey_to() == Global.zero_address(),
 
                     # logic checks
-                    asset_opt_in_check.hasValue() == Int(0),
+                    Txn.assets.length() == Int(1), # make sure assets array is length one assets[0] should be asset_id
+                    Txn.assets[0] == asset_id, # check asset in array at index 0 is indeed equal to the subroutines asset_id
+                    asset_opt_in_check.hasValue() == Int(0), # finally check if contracts balance of asset is 0 -> not opted into asset
                     Txn.sender() == App.globalGet(creator),
                     Txn.fee() >= Global.min_txn_fee() * Int(2),
                 )
