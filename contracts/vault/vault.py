@@ -90,8 +90,8 @@ def approval_program():
                     Txn.rekey_to() == Global.zero_address(),
                     
                     # logic checks
-                    App.optedIn(Txn.sender(), Global.current_application_id()) == Int(0),
-                    Txn.fee() >= Global.min_txn_fee(),
+                    Not(App.optedIn(Txn.sender(), Global.current_application_id())),
+                    #Txn.fee() >= Global.min_txn_fee(),
                 )
             ),
             App.localPut(Txn.sender(), deposit_balance, Int(0)),
